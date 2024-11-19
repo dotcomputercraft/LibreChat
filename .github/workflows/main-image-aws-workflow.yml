@@ -1,0 +1,61 @@
+name: Docker Compose Build Latest Main Image Tag on AWS (Manual Dispatch)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: api-build
+            file: Dockerfile.multi
+            image_name: librechat-api
+          - target: node
+            file: Dockerfile
+            image_name: librechat
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch tags and set the latest tag
+        run: |
+          echo "LATEST_TAG=$(echo "${{ github.sha }}" | cut -c2-8)" >> $GITHUB_ENV
+
+      # Set up QEMU
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Login to AWS ECR
+      - name: Log in to AWS ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+
+        # Prepare the environment
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+
+      # Build and push Docker images for each target
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: |
+            ${{ secrets.AWS_ECR_URI }}/${{ matrix.image_name }}:${{ env.LATEST_TAG }}
+            ${{ secrets.AWS_ECR_URI }}/${{ matrix.image_name }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          target: ${{ matrix.target }}

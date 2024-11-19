@@ -22,7 +22,8 @@ jobs:
 
       - name: Fetch tags and set the latest tag
         run: |
-          echo "LATEST_TAG=$(echo "${{ github.sha }}" | cut -c2-8)" >> $GITHUB_ENV
+          git fetch --tags
+          echo "LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_ENV
 
       # Set up QEMU
       - name: Set up QEMU
@@ -64,7 +65,5 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}:${{ env.LATEST_TAG }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}:latest
-
-          labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           target: ${{ matrix.target }}

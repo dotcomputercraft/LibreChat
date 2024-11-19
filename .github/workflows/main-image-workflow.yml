@@ -20,6 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fetch tags and set the latest tag
+        run: |
+          echo "LATEST_TAG=$(echo "${{ github.sha }}" | cut -c2-8)" >> $GITHUB_ENV
+
       # Set up QEMU
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -56,10 +60,9 @@ jobs:
           file: ${{ matrix.file }}
           push: true
           tags: |
-            SHORT_TAG=$(echo "${{ github.sha }}" | cut -c2-8)
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:$SHORT_TAG
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}::${{ env.LATEST_TAG }}
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}:$SHORT_TAG
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}::${{ env.LATEST_TAG }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}:latest
 
           labels: ${{ steps.meta.outputs.labels }}

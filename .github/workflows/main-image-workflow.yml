@@ -32,6 +32,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/captiv-portal-libre-chat
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
